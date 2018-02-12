@@ -8,4 +8,14 @@
 
 + version4 shiroB-4-more v1:添加了角色的限制但是并没有在 realms里面加上权限的授权 v2:实现了角色权限的授予 v3:多realm验证　可以打开shiroB-4-more查看readme.md
 
-+ version5
++ version5 shiro标签
+
++ version6 shiro注解(角色和权限) 暂时为实现(因为没有加上lifecycleBeanPostProcessor)启用 IOC 容器中使用 shiro 的注解. 但必须在配置了 LifecycleBeanPostProcessor 之后才可以使用
+
++ version7 封装filterChainDefinitionMap 以及配置监听Bean上生命周期的bean(ps　配置version6的功能)
+
++ version8 session使用
+> logger 2018-02-12 15:49:03,428 INFO [com.blue.common.ShiroService] - key:周 
+
++ version9 rember me
+
