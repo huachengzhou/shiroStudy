@@ -6,4 +6,6 @@
 
 + version3 实现了md5加密多次的判断
 
-+ version4 shiroB-4-more v1:添加了角色的限制但是并没有在 realms里面加上权限的授权 v2:
++ version4 shiroB-4-more v1:添加了角色的限制但是并没有在 realms里面加上权限的授权 v2:实现了角色权限的授予 v3:多realm验证　可以打开shiroB-4-more查看readme.md
+
++ version5
