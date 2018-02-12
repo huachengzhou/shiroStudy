@@ -19,3 +19,5 @@
 
 + version9 rember me
 
++ version10 session cache和 cookie cache的实现(有一些问题还没解决)
+
