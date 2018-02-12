@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!--   1. 配置 SecurityManager! -->
+    <bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+        <property name="cacheManager" ref="cacheManager" />
+        <property name="realms">
+            <list>
+                <ref bean="shiroRealmB" />
+                <!--
+                <ref bean="shiroRealmA" />
+                 -->
+            </list>
+        </property>
+    </bean>
+    <!--
+        2. 配置 CacheManager.
+        2.1 需要加入 ehcache 的 jar 包及配置文件.
+    -->
+    <bean id="cacheManager" class="org.apache.shiro.cache.ehcache.EhCacheManager">
+        <property name="cacheManagerConfigFile" value="classpath:ehcache.xml" />
+    </bean>
+    <!--
+       3. 配置 Realm
+       3.1 直接配置实现了 org.apache.shiro.realm.Realm 接口的 bean
+    -->
+    <bean id="shiroRealmA" class="com.shiro.realm.ShiroRealmA" /><!-- 实现Realm接口不能够设置md5的hash加密需要手动 -->
+    <bean id="shiroRealmB" class="com.shiro.realm.ShiroRealmB">
+        <property name="credentialsMatcher">
+            <bean class="org.apache.shiro.authc.credential.HashedCredentialsMatcher">
+                <property name="hashAlgorithmName" value="MD5" /><!-- 加密方式的名字 -->
+                <property name="hashIterations" value="1024" /><!--md5加密次数 -->
+            </bean>
+        </property>
+    </bean>
+
+    <!--
+       6. 配置 ShiroFilter.
+       6.1 id 必须和 web.xml 文件中配置的 DelegatingFilterProxy 的 <filter-name> 一致.若不一致, 则会抛出: NoSuchBeanDefinitionException. 因为 Shiro 会来 IOC 容器中查找和 <filter-name> 名字对应的 filter bean.
+     -->
+    <bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+        <property name="securityManager" ref="securityManager" />
+        <property name="loginUrl" value="/login.jsp" />
+        <property name="successUrl" value="/list.jsp" />
+        <property name="unauthorizedUrl" value="/unauthorized.jsp" />
+        <!--
+            /** = authc
+            重点来了,必须哦! /sys/login.action = anon 必须加上因为需要把登录的请求和资源开放,不然就没法认证了,其它都可以不开放
+            至于我开放的其它主要用作测试
+         -->
+        <property name="filterChainDefinitions">
+            <value>
+                /login.jsp = anon
+                /sys/login.action = anon
+                /sys/logout.action = anon
+
+                /admin.jsp = roles[admin]
+                /user.jsp = roles[user]
+
+                # everything else requires authentication:
+                /** = authc
+            </value>
+        </property>
+    </bean>
+</beans>

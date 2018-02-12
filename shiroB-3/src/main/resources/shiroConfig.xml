@@ -54,6 +54,7 @@
             <value>
                 /login.jsp = anon
                 /sys/login.action = anon
+                /sys/logout.action = anon
                 /springmvc/test/success.action = anon
 
                 # everything else requires authentication:
