@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <!--   1. 配置 SecurityManager! -->
+    <bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+        <property name="cacheManager" ref="cacheManager" />
+        <property name="realms">
+            <list>
+                <ref bean="shiroRealmB" />
+                <ref bean="shiroRealmA" />
+                <ref bean="shiroRealmC" /><!-- 多Realm验证 ,不要加上shiroRealmA有这两个就够了,当然加上也无妨但是总感多余呀!-->
+                <!--
+                 -->
+            </list>
+        </property>
+        <property name="rememberMeManager.cookie.maxAge" value="30" /><!-- 设置记住我的时间 单位秒 -->
+    </bean>
+    <!--
+        2. 配置 CacheManager.
+        2.1 需要加入 ehcache 的 jar 包及配置文件.
+    -->
+    <bean id="cacheManager" class="org.apache.shiro.cache.ehcache.EhCacheManager">
+        <property name="cacheManagerConfigFile" value="classpath:ehcache.xml" />
+    </bean>
+    <!--
+       3. 配置 Realm
+       3.1 直接配置实现了 org.apache.shiro.realm.Realm 接口的 bean
+    -->
+    <bean id="shiroRealmA" class="com.shiro.realm.ShiroRealmA" /><!-- 实现Realm接口不能够设置md5的hash加密需要手动 -->
+    <bean id="shiroRealmB" class="com.shiro.realm.ShiroRealmB">
+        <property name="credentialsMatcher">
+            <bean class="org.apache.shiro.authc.credential.HashedCredentialsMatcher">
+                <property name="hashAlgorithmName" value="MD5" /><!-- 加密方式的名字 -->
+                <property name="hashIterations" value="1024" /><!--md5加密次数 -->
+            </bean>
+        </property>
+    </bean>
+    <bean id="shiroRealmC" class="com.shiro.realm.ShiroRealmC">
+        <property name="credentialsMatcher">
+            <bean class="org.apache.shiro.authc.credential.HashedCredentialsMatcher">
+                <property name="hashAlgorithmName" value="SHA1" /><!-- 加密方式的名字 -->
+                <property name="hashIterations" value="1024" /><!--SHA1 加密次数 -->
+            </bean>
+        </property>
+    </bean>
+    <bean id="authenticator" class="org.apache.shiro.authc.pam.ModularRealmAuthenticator">
+        <property name="authenticationStrategy">
+            <bean class="org.apache.shiro.authc.pam.AllSuccessfulStrategy" />
+            <!--
+             说明一下:FirstSuccessfulStrategy,AtLeastOneSuccessfulStrategy,AllSuccessfulStrategy三种方式
+             FirstSuccessfulStrategy:只要有一个 Realm 验证成功即可,只返回第一个 Realm 身份验证成功的认证信息,其他的忽略;
+             AtLeastOneSuccessfulStrategy:只要有一个Realm验证成功即可,和FirstSuccessfulStrategy 不同,将返回所有Realm身份验证成功的认证信息;
+             AllSuccessfulStrategy:所有Realm验证成功才算成功,且返回所有Realm身份验证成功的认证信息,如果有一个失败就失败了。
+             ModularRealmAuthenticator 默认是 AtLeastOneSuccessfulStrategy策略
+             -->
+        </property>
+    </bean>
+
+    <!--start 不配置就会抛出UnauthorizedException -->
+    <!--4. 配置 LifecycleBeanPostProcessor. 可以自定的来调用配置在 Spring IOC 容器中 shiro bean 的生命周期方法.-->
+    <bean id="lifecycleBeanPostProcessor" class="org.apache.shiro.spring.LifecycleBeanPostProcessor" />
+    <!--  5. 启用 IOC 容器中使用 shiro 的注解. 但必须在配置了 LifecycleBeanPostProcessor 之后才可以使用. -->
+    <bean class="org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator" depends-on="lifecycleBeanPostProcessor" />
+    <bean class="org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor">
+        <property name="securityManager" ref="securityManager" />
+    </bean>
+    <!-- end 上面的３个Bean都是必须配置的 -->
+
+    <!--
+       6. 配置 ShiroFilter.
+       6.1 id 必须和 web.xml 文件中配置的 DelegatingFilterProxy 的 <filter-name> 一致.若不一致, 则会抛出: NoSuchBeanDefinitionException. 因为 Shiro 会来 IOC 容器中查找和 <filter-name> 名字对应的 filter bean.
+     -->
+    <bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+        <property name="securityManager" ref="securityManager" />
+        <property name="loginUrl" value="/login.jsp" />
+        <property name="successUrl" value="/list.jsp" />
+        <property name="unauthorizedUrl" value="/unauthorized.jsp" />
+        <property name="filterChainDefinitionMap" ref="filterChainDefinitionMap" />
+        <!--
+            /** = authc
+            重点来了,必须哦! /sys/login.action = anon 必须加上因为需要把登录的请求和资源开放,不然就没法认证了,其它都可以不开放
+            至于我开放的其它主要用作测试
+         -->
+        <!--
+        <property name="filterChainDefinitions">
+            <value>
+                /login.jsp = anon
+                /sys/login.action = anon
+                /sys/logout.action = anon
+
+                /admin.jsp = roles[admin]
+                /user.jsp = roles[user]
+
+                # everything else requires authentication:
+                /** = authc
+            </value>
+        </property>
+        -->
+    </bean>
+
+    <bean id="filterChainDefinitionMap" factory-bean="filterChainDefinitionMapBuilder" factory-method="buildFilterChainDefinitionMap" />
+    <bean id="filterChainDefinitionMapBuilder" class="com.blue.common.FilterChainDefinitionMapBuilder" />
+</beans>
